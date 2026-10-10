@@ -4,7 +4,7 @@ Project: hackPHS 2026 haptic G-load trainer. Full plan: `~/hackphs/project-plan.
 Flight-sim G-load drives a thigh cuff via Arduino. It is a G-load haptic feedback trainer, not a G-force simulator.
 
 ## Status (2026-10-10)
-Tasks 1, 2, 4, 5 done and the X-Plane half of task 3 is written: `bridge/bridge.py` (`--demo`, `--live`, `--print`, `--loop`, `--port`, `--xplane-host`, `--dataref`). Tested with `bridge/fake_xplane.py`. Still to do: test against a real Arduino and real X-Plane, then tune `DEMO_PROFILE` to 01's inflate time. Demo laptop is a Mac, so X-Plane (MSFS is Windows-only).
+Tasks 1 to 5 written. **The sim is FlightGear.** `bridge/bridge.py` flags: `--demo`, `--live` (FlightGear, needs `--httpd=5400`), `--sim xplane`, `--print`, `--loop`, `--port`, `--sim-host`, `--fg-port`, `--fg-prop`. Tested with `fake_flightgear.py` and `fake_xplane.py`. Still to do: test against a real Arduino and real FlightGear (check level flight reads ~1.0), then tune `DEMO_PROFILE` to 01's inflate time. Live steps: `docs/demo-runbook.md`.
 
 ## Your job
 A Python script on the laptop that reads live G-load from the sim and sends it to the Arduino over serial. Plus a demo mode that works with no sim at all. Demo mode is not optional: live hookup is the most likely thing to flake on stage.

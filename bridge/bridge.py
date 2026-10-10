@@ -9,7 +9,8 @@ How to run it (from the bridge folder):
     .venv/bin/python bridge.py --demo --print     # no Arduino needed, just prints
     .venv/bin/python bridge.py --demo             # sends to the real Arduino
     .venv/bin/python bridge.py --demo --loop      # repeat the demo forever
-    .venv/bin/python bridge.py --live             # read G from X-Plane
+    .venv/bin/python bridge.py --live             # read G from FlightGear (start it with --httpd=5400)
+    .venv/bin/python bridge.py --live --sim xplane   # or from X-Plane
 
 While it runs: press ENTER to trigger a 6 G spike. Press Ctrl+C to quit.
 """
@@ -19,8 +20,10 @@ import csv
 import os
 import socket
 import struct
+import json
 import threading
 import time
+import urllib.request
 from datetime import datetime
 
 import serial
@@ -57,11 +60,22 @@ SPIKE_RAMP_UP = 1.0    # seconds
 SPIKE_HOLD = 2.0
 SPIKE_RAMP_DOWN = 1.5
 
-# Live mode (X-Plane). X-Plane listens for requests on UDP port 49000 and
+# Live mode (FlightGear). FlightGear must be started with --httpd=5400, which
+# turns on its built-in web server. We read one property from it 20x a second.
+FG_PORT = 5400
+# FlightGear has several G properties and not every aircraft fills every one,
+# so we try these in order and use the first that returns a number.
+FG_G_PROPERTIES = [
+    "/fdm/jsbsim/accelerations/Nz",   # JSBSim load factor (default FDM, e.g. the Cessna 172P)
+    "/accelerations/pilot-gdamped",   # used by g-meters; may only update with blackout on
+    "/accelerations/pilot-g",
+]
+
+# Live mode (X-Plane, alternative). X-Plane listens for requests on UDP port 49000 and
 # sends the value back to us. g_nrml = vertical G-load in g (1.0 in level flight).
 XPLANE_PORT = 49000
 XPLANE_DATAREF = "sim/flightmodel/forces/g_nrml"
-LIVE_TIMEOUT_S = 1.0   # no data from X-Plane this long -> stop sending (cuff vents)
+LIVE_TIMEOUT_S = 1.0   # no data from the sim this long -> stop sending (cuff vents)
 SMOOTHING = 0.4        # 0..1, how far to move toward each new reading. 1 = no smoothing
 
 
@@ -155,10 +169,69 @@ def connect(port_override):
 # Reading G from X-Plane
 # ---------------------------------------------------------------------------
 
+class FlightGear:
+    """Reads G from FlightGear's built-in web server (start FlightGear with --httpd=5400).
+    You can check the same value in a browser: http://localhost:5400/json/fdm/jsbsim/accelerations/Nz
+    A background thread keeps asking; read() returns the newest answer."""
+
+    name = "FlightGear"
+
+    def __init__(self, host, port, prop=None):
+        self.base = f"http://{host}:{port}/json"
+        self.candidates = [prop] if prop else FG_G_PROPERTIES
+        self.prop = None          # which property we settled on
+        self.last_value = None
+        self.last_rx = 0.0
+        self.running = True
+        threading.Thread(target=self._poll, daemon=True).start()
+
+    def _get(self, prop):
+        """One property's value as a float, or None."""
+        try:
+            with urllib.request.urlopen(self.base + prop, timeout=0.5) as resp:
+                value = json.load(resp).get("value")
+            value = float(value)
+            return value if value == value else None   # value == value skips NaN
+        except Exception:
+            return None   # FlightGear not running yet, property missing, bad reply...
+
+    def _poll(self):
+        while self.running:
+            if self.prop is None:
+                # Find the first candidate property that gives a number.
+                for prop in self.candidates:
+                    if self._get(prop) is not None:
+                        self.prop = prop
+                        print(f"Reading G from {prop}")
+                        break
+                else:
+                    time.sleep(1)
+                    continue
+            value = self._get(self.prop)
+            if value is None:
+                if time.time() - self.last_rx > 5:
+                    self.prop = None   # lost it for a while: search again (aircraft change, restart)
+                time.sleep(0.2)
+                continue
+            self.last_value = value
+            self.last_rx = time.time()
+            time.sleep(1 / SEND_RATE_HZ)
+
+    def read(self):
+        """Newest G from FlightGear, or None if nothing has arrived for a while."""
+        if time.time() - self.last_rx > LIVE_TIMEOUT_S:
+            return None
+        return self.last_value
+
+    def close(self):
+        self.running = False
+
+
 class XPlane:
     """Asks X-Plane to stream one value (a 'dataref') to us over UDP.
     No setup needed inside X-Plane: we send an RREF request, it replies."""
 
+    name = "X-Plane"
     INDEX = 1   # our label for the value; X-Plane sends it back with each reply
 
     def __init__(self, host, dataref):
@@ -217,18 +290,27 @@ def main():
     parser = argparse.ArgumentParser(description="Send G-load to the Arduino.")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--demo", action="store_true", help="play the scripted demo flight")
-    mode.add_argument("--live", action="store_true", help="read live G from X-Plane")
+    mode.add_argument("--live", action="store_true", help="read live G from the flight sim")
     parser.add_argument("--print", action="store_true", help="print lines instead of sending them")
     parser.add_argument("--loop", action="store_true", help="repeat the demo forever")
     parser.add_argument("--port", help="serial port, e.g. /dev/tty.usbmodem1101 (default: auto-detect)")
-    parser.add_argument("--xplane-host", default="127.0.0.1",
-                        help="IP of the computer running X-Plane (default: this one)")
+    parser.add_argument("--sim", choices=["flightgear", "xplane"], default="flightgear",
+                        help="which sim --live reads from (default: flightgear)")
+    parser.add_argument("--sim-host", default="127.0.0.1",
+                        help="IP of the computer running the sim (default: this one)")
+    parser.add_argument("--fg-port", type=int, default=FG_PORT,
+                        help="FlightGear --httpd port (default: 5400)")
+    parser.add_argument("--fg-prop", help="FlightGear G property to read (default: auto-detect)")
     parser.add_argument("--dataref", default=XPLANE_DATAREF, help="X-Plane value to read")
     args = parser.parse_args()
 
     # Open the Arduino connection unless we're only printing.
     ser = None if args.print else connect(args.port)
-    xp = XPlane(args.xplane_host, args.dataref) if args.live else None
+    sim = None
+    if args.live and args.sim == "flightgear":
+        sim = FlightGear(args.sim_host, args.fg_port, args.fg_prop)
+    elif args.live:
+        sim = XPlane(args.sim_host, args.dataref)
 
     # Start a CSV log file for this run, e.g. logs/run-2026-10-10_14-03-22.csv
     os.makedirs("logs", exist_ok=True)
@@ -253,17 +335,17 @@ def main():
 
             # 1. Decide on G
             if args.live:
-                raw = xp.read()
+                raw = sim.read()
                 if raw is None:
-                    # No data from X-Plane: send nothing, so the Arduino vents.
+                    # No data from the sim: send nothing, so the Arduino vents.
                     if not waiting_shown:
-                        print(f"Waiting for X-Plane at {args.xplane_host}... (cuff stays vented)")
+                        print(f"Waiting for {sim.name} at {args.sim_host}... (cuff stays vented)")
                         waiting_shown = True
                     smoothed = None
                     time.sleep(1 / SEND_RATE_HZ)
                     continue
                 if waiting_shown:
-                    print("X-Plane connected.")
+                    print(f"{sim.name} connected.")
                     waiting_shown = False
                 smoothed = raw if smoothed is None else smoothed + SMOOTHING * (raw - smoothed)
                 g = smoothed
@@ -313,8 +395,8 @@ def main():
         print("\nStopped.")
     finally:
         log_file.close()
-        if xp:
-            xp.close()
+        if sim:
+            sim.close()
         if ser:
             ser.close()   # Arduino stops hearing us -> vents the cuff on its own
 

@@ -18,7 +18,7 @@ squeezes; level off and it lets go. It's a **G-load haptic feedback trainer**, n
 create real acceleration, but it gives the same pressure cue a G-suit does, in time with your flight.
 
 ## How we built it
-- **Sim link:** a Python script reads G-load from X-Plane over UDP (or plays a scripted demo flight) and sends it to
+- **Sim link:** a Python script reads G-load from FlightGear's built-in web server (or plays a scripted demo flight) and sends it to
   an Arduino over USB serial, 20 times a second.
 - **Firmware:** the Arduino maps G to a target fill level and drives a 12V air pump and a vent solenoid through relays.
   With no pressure sensor, it estimates fill from pump and vent timing, re-zeroing each time G returns to 1.
@@ -41,7 +41,7 @@ Pressure sensor for closed-loop control, second leg, lateral G (one side squeeze
 anti-G straining cues.
 
 ## Built with
-python, pyserial, arduino, c++, x-plane, udp
+python, pyserial, arduino, c++, flightgear
 
 ## Parts list (from receipts)
 

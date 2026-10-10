@@ -3,7 +3,7 @@
 Single source of truth for everyone on the team and their Claude agents. Last updated 2026-10-10 (day of event). If something here is stale, fix it here.
 
 ## What we're building
-A cheap haptic G-load feedback trainer for flight sims. A pressure cuff on the thigh inflates in proportion to live G-load from the sim (MSFS via SimConnect, or X-Plane via UDP), the same squeeze cue real G-suit bladders give pilots.
+A cheap haptic G-load feedback trainer for flight sims. A pressure cuff on the thigh inflates in proportion to live G-load from the sim (FlightGear, via its built-in web server), the same squeeze cue real G-suit bladders give pilots.
 
 - Event: hackPHS 2026, theme "Into the Skies". Tracks: ElevenLabs (voice), Cybersecurity, Codeset.
 - Honest framing, required in the pitch: this is a G-load haptic feedback trainer, NOT a G-force simulator. Real G needs real acceleration and cannot be done cheaply. Saying this up front survives technical questions; an oversold claim does not.
@@ -27,7 +27,7 @@ Hardware alone first (bench test), then telemetry software, then integration. In
 
 ## Architecture
 ```
-sim (MSFS/X-Plane) -> Python bridge (laptop) -> USB serial -> Arduino Uno
+sim (FlightGear) -> Python bridge (laptop) -> USB serial -> Arduino Uno
    -> 4-ch relay -> 12V pump + vent solenoid -> thigh cuff
 ```
 Power: 8xAA pack (12V) feeds the pump and solenoid through the relay COM terminals. The Arduino runs from USB. Never power loads through the Arduino.
@@ -49,11 +49,11 @@ Power: 8xAA pack (12V) feeds the pump and solenoid through the relay COM termina
 Each agent updates only its own line. See `CLAUDE.md` for the rules.
 
 - **01 Hardware:** pump inflates, valve is normally open. Still to do: T-fitting or dual-tube cuff, inflate/vent/max-run timings, strain relief.
-- **03 Bridge:** `bridge/bridge.py` done. `--demo` (scripted flight, ENTER = 6 G spike, `--loop`), `--live` (X-Plane via UDP RREF, `sim/flightmodel/forces/g_nrml`, no X-Plane setup needed), `--print`, auto-detect + reconnect, CSV logs. Tested against `bridge/fake_xplane.py`; not yet tested with real X-Plane or a real Arduino.
+- **03 Bridge:** `bridge/bridge.py` done. `--demo` (scripted flight, ENTER = 6 G spike, `--loop`), `--live` (FlightGear via `--httpd=5400`, auto-detects the G property; X-Plane also supported with `--sim xplane`), `--print`, auto-detect + reconnect, CSV logs. Tested against `bridge/fake_flightgear.py` and `fake_xplane.py`; not yet tested with real FlightGear or a real Arduino.
 - **02 Firmware:** `firmware/g_trainer/` written for the NO valve, with watchdog, dead-man, pump cap, deadband, re-zero, TEST/STOP/STATUS. Logic unit-tested on a laptop (19 checks pass). **Not yet uploaded to a real Uno. Timings are placeholders until 01 measures them.**
 - **04 Integration:** drafts ready (runbook, pitch, Devpost). Still to do: receipts total, live-sim cutoff time, backup video, rehearsals.
 - **Docs:** wiring in `docs/wiring.md`, demo steps + troubleshooting in `docs/demo-runbook.md`, pitch + Devpost drafts in `pitch/`.
-- **Sim:** the demo laptop is a Mac, so X-Plane, not MSFS (MSFS is Windows-only).
+- **Sim:** FlightGear (free, runs on Mac). Start it with `--httpd=5400` in the launcher's Additional Settings.
 
 ## Firmware logic (open loop, no pressure sensor)
 - Map G to a target fill: 1 G or below = empty, about 6 G or more = full. Linear between.
@@ -80,7 +80,7 @@ Firmware vents on serial loss, hard pump time cap, never exceed a firm but comfo
 - Flyback diodes (1N400x) across pump and valve if available. See `docs/wiring.md`.
 
 ## Software notes
-- `pyserial` for the Arduino. X-Plane: the bridge sends an RREF request to UDP 49000 for `sim/flightmodel/forces/g_nrml` (float, g). Confirm the name in the installed `Resources/plugins/DataRefs.txt` if no data arrives; override with `--dataref`.
+- `pyserial` for the Arduino. FlightGear: the bridge reads JSON from `http://localhost:5400/json/<property>`, trying `/fdm/jsbsim/accelerations/Nz`, then `/accelerations/pilot-gdamped`, then `/accelerations/pilot-g`. Check in a browser that level flight reads ~1.0; override with `--fg-prop`.
 - The Uno reboots when the serial port opens; the bridge waits 2 s after connecting.
 - Light low-pass smoothing on G, but not so much that the cuff feels laggy.
 - Log G to CSV for debugging and a pitch graph.

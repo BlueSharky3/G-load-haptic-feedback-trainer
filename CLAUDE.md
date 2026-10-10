@@ -47,5 +47,6 @@ If a change is needed in someone else's area, tell your teammate to pass it on, 
 ## Checking your work
 - Firmware logic tests: `cd firmware/test && g++ -std=c++11 -I../g_trainer test_logic.cpp -o test_logic && ./test_logic`
 - Bridge without hardware: `cd bridge && .venv/bin/python bridge.py --demo --print`
-- Live mode without X-Plane: run `bridge/fake_xplane.py` in one terminal and `bridge.py --live --print` in another.
+- Live mode without FlightGear: run `bridge/fake_flightgear.py` in one terminal and `bridge.py --live --print` in another.
+- The sim is **FlightGear** (X-Plane support exists as `--sim xplane`, MSFS is not supported).
 - Set up the bridge environment the first time: `cd bridge && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`

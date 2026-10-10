@@ -14,7 +14,7 @@ You can't fake that cheaply. What we *can* give you is the same pressure cue a G
 
 ## 3. Live demo (45 s)
 - Volunteer wears the cuff, kill switch in hand.
-- Start the flight (live X-Plane, or `--demo` if live is flaky; say which).
+- Start the flight (live FlightGear, or `--demo` if live is flaky; say which).
 - Call out the pulls: "Here's 5 G... easing off... now 7." Hit ENTER for an on-cue spike if needed.
 - Ask the volunteer what they feel.
 

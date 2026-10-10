@@ -5,7 +5,7 @@
 - [ ] **1. Cuff alone.** Pump inflates and valve vents from the 8xAA pack, no Arduino. Inflate and vent times measured.
 - [ ] **2. Firmware alone.** Sketch uploaded, real timings entered, `TEST` works in Serial Monitor.
 - [ ] **3. End to end, demo mode.** `bridge.py --demo` squeezes the real cuff. **Record the backup video now.**
-- [ ] **4. Live sim.** `bridge.py --live` with X-Plane. If it isn't working by the cutoff time, demo mode is the plan.
+- [ ] **4. Live sim.** `bridge.py --live` with FlightGear. If it isn't working by the cutoff time, demo mode is the plan.
 - [ ] **5. Rehearse twice** with someone wearing the cuff, full pitch, timed.
 
 Live-sim cutoff time: ______ (pick one; after it, stop working on live mode and polish the demo).
@@ -27,26 +27,38 @@ Live-sim cutoff time: ______ (pick one; after it, stop working on live mode and 
    ```
 6. Press ENTER for a spike whenever you want a squeeze on cue.
 
-## Live mode with X-Plane
+## Live mode with FlightGear
 
-1. Start X-Plane on the Mac and get flying (a small aerobatic plane pulls G easily).
-2. `.venv/bin/python bridge.py --live`. It prints "X-Plane connected" once data flows.
-3. Pull back on the stick: G rises, cuff squeezes. Level off: it vents.
-4. If X-Plane runs on another computer: `--xplane-host <that computer's IP>`.
+1. **Turn on FlightGear's web server.** In the FlightGear launcher, open **Settings** and type this in the
+   **Additional Settings** box at the bottom:
+   ```
+   --httpd=5400
+   ```
+2. Fly, and use a JSBSim aircraft. The default Cessna 172P is fine.
+3. Check it in a browser: open http://localhost:5400/json/fdm/jsbsim/accelerations/Nz. You should see a `"value"`
+   close to **1.0** while flying level. If it's a number, live mode will work.
+4. `.venv/bin/python bridge.py --live`. It prints which property it's reading, then "FlightGear connected".
+5. Pull back on the yoke: G rises, cuff squeezes. Level off: it vents.
+6. If FlightGear runs on another computer: `--sim-host <that computer's IP>`.
 
-No settings needed inside X-Plane. The script asks for `sim/flightmodel/forces/g_nrml` over UDP port 49000.
-If nothing arrives, check the name exists in `X-Plane/Resources/plugins/DataRefs.txt` (or the free DataRefEditor
-plugin), and pass the right one with `--dataref`.
+The bridge tries these G properties in order and uses the first that answers:
+`/fdm/jsbsim/accelerations/Nz`, `/accelerations/pilot-gdamped`, `/accelerations/pilot-g`.
+To force one: `--fg-prop /accelerations/pilot-gdamped`. You can browse every property at http://localhost:5400.
 
-Test live mode without X-Plane:
+**Check before the demo:** level flight reads about 1.0, a hard pull reads 3 or more, and it moves while you fly.
+If it sits at exactly 1.0 during a pull, that property isn't updating for this aircraft. Force another one.
+
+Test live mode without FlightGear:
 ```bash
-.venv/bin/python fake_xplane.py          # terminal 1
+.venv/bin/python fake_flightgear.py       # terminal 1
 .venv/bin/python bridge.py --live --print # terminal 2
 ```
 
+X-Plane also works (`--live --sim xplane`, no X-Plane setup needed; test with `fake_xplane.py`).
+
 ## Fallback ladder (if something breaks on stage, step down one rung)
 
-1. Live X-Plane
+1. Live FlightGear
 2. `--demo --loop` (scripted flight + ENTER spikes)
 3. Serial Monitor, type `TEST` (proves the hardware alone)
 4. The backup video
@@ -64,7 +76,8 @@ Say it honestly: "the live sim link is flaky, so here's the same cuff on a scrip
 | Cuff lags way behind G | Pump is slow for the bladder | Stretch `DEMO_PROFILE` timings; lower `gFull` so it fills sooner |
 | Never reaches full squeeze | `pumpMaxRunMs` shorter than `inflateMs` | Set the cap ~25% above `inflateMs` |
 | Squeeze weaker as the day goes on | AAs sagging | Fresh batteries |
-| "Waiting for X-Plane..." forever | X-Plane not running, wrong host, wrong dataref | See live mode notes above |
+| "Waiting for FlightGear..." forever | FlightGear started without `--httpd=5400`, or still loading | See live mode notes above |
+| Connected but G stuck at one value | Property exists but this aircraft doesn't update it | Try another with `--fg-prop` (see live mode notes) |
 
 ## Safety (say this in the pitch)
 
