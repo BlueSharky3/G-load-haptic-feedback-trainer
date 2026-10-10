@@ -46,8 +46,12 @@ Power: 8xAA pack (12V) feeds the pump and solenoid through the relay COM termina
 - Still unmeasured: inflate time empty to firm, vent time, max safe run time. 01 owns these, 02 needs them.
 
 ## Status (2026-10-10)
-- **Bridge (03):** `bridge/bridge.py` done. `--demo` (scripted flight, ENTER = 6 G spike, `--loop`), `--live` (X-Plane via UDP RREF, `sim/flightmodel/forces/g_nrml`, no X-Plane setup needed), `--print`, auto-detect + reconnect, CSV logs. Tested against `bridge/fake_xplane.py`; not yet tested with real X-Plane or a real Arduino.
-- **Firmware (02):** `firmware/g_trainer/` written for the NO valve, with watchdog, dead-man, pump cap, deadband, re-zero, TEST/STOP/STATUS. Logic unit-tested on a laptop (19 checks pass). **Not yet uploaded to a real Uno. Timings are placeholders until 01 measures them.**
+Each agent updates only its own line. See `CLAUDE.md` for the rules.
+
+- **01 Hardware:** pump inflates, valve is normally open. Still to do: T-fitting or dual-tube cuff, inflate/vent/max-run timings, strain relief.
+- **03 Bridge:** `bridge/bridge.py` done. `--demo` (scripted flight, ENTER = 6 G spike, `--loop`), `--live` (X-Plane via UDP RREF, `sim/flightmodel/forces/g_nrml`, no X-Plane setup needed), `--print`, auto-detect + reconnect, CSV logs. Tested against `bridge/fake_xplane.py`; not yet tested with real X-Plane or a real Arduino.
+- **02 Firmware:** `firmware/g_trainer/` written for the NO valve, with watchdog, dead-man, pump cap, deadband, re-zero, TEST/STOP/STATUS. Logic unit-tested on a laptop (19 checks pass). **Not yet uploaded to a real Uno. Timings are placeholders until 01 measures them.**
+- **04 Integration:** drafts ready (runbook, pitch, Devpost). Still to do: receipts total, live-sim cutoff time, backup video, rehearsals.
 - **Docs:** wiring in `docs/wiring.md`, demo steps + troubleshooting in `docs/demo-runbook.md`, pitch + Devpost drafts in `pitch/`.
 - **Sim:** the demo laptop is a Mac, so X-Plane, not MSFS (MSFS is Windows-only).
 
