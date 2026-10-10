@@ -312,9 +312,11 @@ def main():
     elif args.live:
         sim = XPlane(args.sim_host, args.dataref)
 
-    # Start a CSV log file for this run, e.g. logs/run-2026-10-10_14-03-22.csv
-    os.makedirs("logs", exist_ok=True)
-    log_path = datetime.now().strftime("logs/run-%Y-%m-%d_%H-%M-%S.csv")
+    # Start a CSV log file for this run, e.g. bridge/logs/run-2026-10-10_14-03-22.csv
+    # (always next to this script, wherever you run it from)
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, datetime.now().strftime("run-%Y-%m-%d_%H-%M-%S.csv"))
     log_file = open(log_path, "w", newline="")
     log = csv.writer(log_file)
     log.writerow(["time_s", "g_raw", "g_sent", "source"])

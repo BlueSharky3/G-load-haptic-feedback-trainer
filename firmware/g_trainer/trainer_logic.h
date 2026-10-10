@@ -145,7 +145,9 @@ class Trainer {
   // Inflate until we reach the target, vent until we reach it, hold in
   // between. Only restart once the error is bigger than the deadband.
   TrainerMode chooseMode(float t) const {
-    if (t <= 0.0f) return MODE_VENT;  // empty target: vent all the way
+    // Near-empty target: vent all the way. Using the deadband here (not 0)
+    // stops the valve clicking on sim noise around 1 G in level flight.
+    if (t <= cfg.deadband) return MODE_VENT;
     TrainerMode m = mode;
     if (m == MODE_INFLATE && fill >= t) m = MODE_HOLD;
     if (m == MODE_VENT && fill <= t) m = MODE_HOLD;

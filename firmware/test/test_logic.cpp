@@ -67,6 +67,21 @@ int main() {
 
   {
     Trainer t(cfg);
+    unsigned long now = 1000;
+    int toggles = 0;
+    bool lastValve = t.valveClosed();
+    char buf[32];
+    for (int i = 0; i < 400; i++, now += 50) {  // level flight: G noise 0.96..1.04
+      snprintf(buf, sizeof buf, "G:%.2f", 1.0f + 0.04f * ((i * 7) % 5 - 2) / 2.0f);
+      t.handleLine(buf, now);
+      t.update(now);
+      if (t.valveClosed() != lastValve) { toggles++; lastValve = t.valveClosed(); }
+    }
+    CHECK(toggles == 0 && !t.valveClosed(), "level-flight G noise around 1.0 does not click the valve");
+  }
+
+  {
+    Trainer t(cfg);
     unsigned long now = run(t, 1000, 3000, 6.0f);
     CHECK(t.pump(), "inflating while signal present");
     now = run(t, now, 600, -1);  // signal lost

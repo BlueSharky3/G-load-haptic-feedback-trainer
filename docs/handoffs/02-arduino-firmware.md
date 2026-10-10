@@ -4,7 +4,7 @@ Project: hackPHS 2026 haptic G-load trainer. Full plan: `~/hackphs/project-plan.
 A laptop script streams a G value over USB serial; the Arduino turns it into pump + vent solenoid actions on a thigh cuff. It is a G-load haptic feedback trainer, not a G-force simulator.
 
 ## Status (2026-10-10)
-Draft sketch is in `firmware/g_trainer/` with a README. It implements everything below for the NO valve and passes 19 laptop unit tests. Your job now: upload it, check relay polarity, enter 01's timings, run the hand test. Read `firmware/README.md`.
+Draft sketch is in `firmware/g_trainer/` with a README. It implements everything below for the NO valve and passes 20 laptop unit tests. Your job now: upload it, check relay polarity, enter 01's timings, run the hand test. Read `firmware/README.md`.
 
 ## Your job
 Write the Arduino Uno sketch and wire the 4-channel relay board. You own everything between "serial bytes arrive" and "pump/solenoid switch".

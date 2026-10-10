@@ -55,7 +55,7 @@ There's no pressure sensor, so the sketch estimates how full the cuff is from ho
 
 ## Tests
 
-The control logic is unit-tested on a laptop (19 checks, including dead-man, pump cap, deadband, garbage input):
+The control logic is unit-tested on a laptop (20 checks, including dead-man, pump cap, deadband, garbage input):
 
 ```bash
 cd firmware/test && g++ -std=c++11 -I../g_trainer test_logic.cpp -o test_logic && ./test_logic

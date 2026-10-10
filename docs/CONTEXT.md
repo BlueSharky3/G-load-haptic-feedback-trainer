@@ -50,7 +50,7 @@ Each agent updates only its own line. See `CLAUDE.md` for the rules.
 
 - **01 Hardware:** pump inflates, valve is normally open. Still to do: T-fitting or dual-tube cuff, inflate/vent/max-run timings, strain relief.
 - **03 Bridge:** `bridge/bridge.py` done. `--demo` (scripted flight, ENTER = 6 G spike, `--loop`), `--live` (FlightGear via `--httpd=5400`, auto-detects the G property; X-Plane also supported with `--sim xplane`), `--print`, auto-detect + reconnect, CSV logs. Tested against `bridge/fake_flightgear.py` and `fake_xplane.py`; not yet tested with real FlightGear or a real Arduino.
-- **02 Firmware:** `firmware/g_trainer/` written for the NO valve, with watchdog, dead-man, pump cap, deadband, re-zero, TEST/STOP/STATUS. Logic unit-tested on a laptop (19 checks pass). **Not yet uploaded to a real Uno. Timings are placeholders until 01 measures them.**
+- **02 Firmware:** `firmware/g_trainer/` written for the NO valve, with watchdog, dead-man, pump cap, deadband, re-zero, TEST/STOP/STATUS. Logic unit-tested on a laptop (20 checks pass). **Not yet uploaded to a real Uno. Timings are placeholders until 01 measures them.**
 - **04 Integration:** drafts ready (runbook, pitch, Devpost). Still to do: receipts total, live-sim cutoff time, backup video, rehearsals.
 - **Docs:** wiring in `docs/wiring.md`, demo steps + troubleshooting in `docs/demo-runbook.md`, pitch + Devpost drafts in `pitch/`.
 - **Sim:** FlightGear (free, runs on Mac). Start it with `--httpd=5400` in the launcher's Additional Settings.
